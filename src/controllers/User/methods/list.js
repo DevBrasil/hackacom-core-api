@@ -2,27 +2,10 @@ const exception = require('../../../middlewares/catchException');
 
 const User = require('../../../models/User');
 
-/**
- * @api {get} /user Listar usuários
- * @apiVersion 1.0.0
- * @apiName ListUsers
- * @apiGroup Usuários
- *
- * @apiHeader {String} authorization Token de autenticação
- *
- * @apiParam {Number} page Pagina
- * @apiParam {Number} perPage Itens por pagina, se não informado, retornará todos
- * @apiParam {Boolean} sort Configura ordenação do conteúdo
- * @apiParam {String} fields Filtrar campos que serão retornados
- * @apiParam {String} filter Filtrar usuários
- * @apiParam {Boolean} active Filtrar apenas por ativos / inativos
- *
- * @apiPermission admin
- */
-
 const list = async (req, res) => {
   try {
-    const { active, sort, page, perPage, fields, filter } = req.query;
+    const { active, sort, page, perPage, fields, filter, ong, location } =
+      req.query;
 
     const options = {
       ...(sort ? { sort } : {}),
@@ -34,17 +17,37 @@ const list = async (req, res) => {
     const query = {
       _id: { $ne: req.tokenUser._id }, // do not return logged user
       deleted: false,
+      active: true,
     };
+    if (location) {
+      const array = location.split(',');
+
+      locationArray = [parseFloat(array[0]), parseFloat(array[1])];
+    }
+
+    if (locationArray.length) {
+      query.location = {
+        $nearSphere: {
+          $geometry: {
+            type: 'Point',
+            coordinates: locationArray,
+          },
+          $maxDistance: 30000,
+        },
+      };
+    }
 
     if (filter) {
       query.$or = [
         { name: { $regex: filter, $options: 'i' } },
         { email: { $regex: filter, $options: 'i' } },
         { phone: { $regex: filter, $options: 'i' } },
-      ]
+      ];
     }
 
-    if (typeof active === 'boolean') query.active = active;
+    if (ong) {
+      query.ong = ong;
+    }
 
     const user = await User.paginate(query, options);
 

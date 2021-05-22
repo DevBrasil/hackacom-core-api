@@ -34,6 +34,21 @@ const register = async (req, res) => {
       password,
       parseInt(process.env.SALT_NUMBER || 10)
     );
+    try {
+      if (restUser.address && restUser.address.zipcode) {
+        const location = await geocoder.geocode(
+          `${restUser.address.street_name}, ${restUser.address.street_number}, ${restUser.address.neighborhood} ${restUser.address.city} ${restUser.address.state} - ${restUser.address.zipcode} `
+        );
+        if (location.length > 0) {
+          restUser.location = {
+            type: 'Point',
+            coordinates: [location[0].longitude, location[0].latitude],
+          };
+        }
+      }
+    } catch (err) {
+      console.log(err);
+    }
 
     const user = await User.create({
       email,

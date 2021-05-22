@@ -38,7 +38,7 @@ router.post(
 );
 router.delete('/me', auth(), destroy);
 
-router.get('/', auth(['admin']), validate(validators.list), list);
+router.get('/', auth(['admin', 'user']), list);
 router.get('/:id', auth(['admin']), get);
 router.put('/:id', auth(['admin']), update);
 router.put('/:id/password', auth(['admin']), updatePassword);
